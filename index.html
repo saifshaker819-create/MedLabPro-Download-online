@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>أرشفة الجوازات التالفة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17324d; --muted:#5f7a95;
+  --sky:#1ea7ff; --violet:#7c5cff; --coral:#ff5d8f; --sun:#ffb703; --mint:#12c99b;
+  --glass:rgba(255,255,255,.56); --edge:rgba(255,255,255,.9);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:'Cairo','Segoe UI',Tahoma,Arial,sans-serif; color:var(--ink);
+  background:linear-gradient(135deg,#d6f1ff 0%,#ffe9f3 48%,#fff4c9 100%); background-attachment:fixed;
+  padding:14px 14px 48px; padding-top:max(14px,env(safe-area-inset-top));
+}
+.blob{position:fixed;border-radius:50%;filter:blur(70px);opacity:.7;z-index:0;pointer-events:none}
+.b1{width:360px;height:360px;background:#38bdf8;top:-90px;right:-70px}
+.b2{width:320px;height:320px;background:#ff7eb6;bottom:-70px;left:-50px}
+.b3{width:260px;height:260px;background:#ffd84d;top:42%;left:32%}
+.b4{width:240px;height:240px;background:#5eead4;top:8%;left:-80px}
+.wrap{position:relative;z-index:1;max-width:1120px;margin:0 auto}
+
+.glass{
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(20px) saturate(170%); backdrop-filter:blur(20px) saturate(170%);
+  border:1px solid var(--edge); border-radius:26px; padding:16px;
+  box-shadow:0 14px 34px rgba(70,110,170,.16), inset 0 1px 0 rgba(255,255,255,.95);
+}
+header.glass{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.logo{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;font-size:26px;
+  background:linear-gradient(135deg,var(--sky),var(--violet));box-shadow:0 8px 18px rgba(30,167,255,.4)}
+h1{margin:0;font-size:1.3rem;font-weight:800;line-height:1.2}
+header p{margin:2px 0 0;color:var(--muted);font-size:.85rem}
+header .sp{flex:1}
+button{font-family:inherit;cursor:pointer;border:0}
+.ghost{width:42px;height:42px;border-radius:14px;background:rgba(255,255,255,.7);border:1px solid var(--edge);font-size:1.1rem;font-weight:800;color:var(--ink)}
+
+.grid{display:grid;gap:14px;grid-template-columns:1fr;grid-template-areas:"a" "b" "c"}
+.pa{grid-area:a}.pb{grid-area:b}.pc{grid-area:c}
+@media(min-width:920px){.grid{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);grid-template-areas:"a c" "b c";align-items:start}}
+
+/* progress */
+.count{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.count b{font-size:2.5rem;font-weight:800;line-height:1;letter-spacing:-.02em}
+.count span{color:var(--muted);font-weight:600}
+.count .tgt{cursor:pointer;border-bottom:2px dotted var(--muted)}
+.bar{height:14px;border-radius:99px;background:rgba(255,255,255,.75);margin:12px 0 10px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(60,100,150,.2)}
+.bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--mint),var(--sky),var(--violet));transition:width .5s}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;font-size:.82rem;font-weight:700;background:rgba(255,255,255,.75);border:1px solid var(--edge)}
+.chip.ok{color:#087f5b;background:rgba(18,201,155,.18)}
+.chip.rv{color:#b45309;background:rgba(255,183,3,.26)}
+.chip.dp{color:#be185d;background:rgba(255,93,143,.18)}
+.chip.vf{color:#0369a1;background:rgba(30,167,255,.16)}
+
+/* actions */
+.actions{display:grid;gap:10px;margin-top:14px}
+.big{
+  width:100%;padding:18px 16px;border-radius:22px;font-size:1.2rem;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,var(--sky),var(--violet) 60%,var(--coral));
+  box-shadow:0 14px 28px rgba(124,92,255,.35), inset 0 1px 0 rgba(255,255,255,.5);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.big:active{transform:scale(.985)}
+.big .ic{font-size:1.5rem}
+.soft{padding:12px 14px;border-radius:16px;font-weight:700;font-size:.92rem;color:var(--ink);background:rgba(255,255,255,.72);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;gap:8px}
+.soft.warn{background:rgba(255,183,3,.3);color:#92400e}
+.soft.good{background:rgba(18,201,155,.2);color:#087f5b}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.5);border:1px solid var(--edge);font-size:.88rem;font-weight:600}
+.row small{color:var(--muted);font-weight:600;display:block}
+.row .soft{padding:8px 12px;font-size:.85rem}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#94a3b8;margin-inline-end:6px}
+.dot.on{background:var(--mint);box-shadow:0 0 0 4px rgba(18,201,155,.25)}
+.dot.wait{background:var(--sun);box-shadow:0 0 0 4px rgba(255,183,3,.25)}
+.queue{min-height:22px;font-weight:700;font-size:.88rem;color:var(--violet);display:flex;align-items:center;gap:8px}
+.spin{width:16px;height:16px;border-radius:50%;border:3px solid rgba(124,92,255,.25);border-top-color:var(--violet);animation:sp 0.8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}.bar i{transition:none}}
+
+/* editor */
+.ph{border-radius:18px;background:rgba(255,255,255,.55);border:1px dashed rgba(23,50,77,.25);min-height:150px;display:grid;place-items:center;overflow:hidden;color:var(--muted);text-align:center;padding:8px}
+.ph img{max-width:100%;max-height:320px;border-radius:12px;display:block}
+.num{
+  width:100%;margin-top:12px;padding:14px 12px;border-radius:18px;font:800 1.7rem/1.2 'Cairo',ui-monospace,Consolas,monospace;
+  text-align:center;letter-spacing:.14em;color:var(--ink);direction:ltr;
+  background:rgba(255,255,255,.85);border:2px solid transparent;outline:0;
+  box-shadow:inset 0 2px 6px rgba(60,100,150,.15);
+}
+.num:focus{border-color:var(--sky);box-shadow:0 0 0 5px rgba(30,167,255,.2)}
+.num.review{border-color:var(--sun);background:rgba(255,248,220,.95)}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap}
+.state{font-size:.85rem;font-weight:700;color:var(--muted)}
+.state.ok{color:#087f5b}.state.wr{color:#b45309}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.danger{color:#be123c}
+
+/* list */
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{flex:1;min-width:140px;padding:11px 14px;border-radius:14px;border:1px solid var(--edge);background:rgba(255,255,255,.8);font:600 .95rem 'Cairo',sans-serif;color:var(--ink);outline:0;direction:ltr;text-align:right}
+.tabs{display:flex;gap:6px;margin:10px 0}
+.tab{flex:1;padding:9px 6px;border-radius:14px;font-weight:700;font-size:.85rem;background:rgba(255,255,255,.5);color:var(--muted);border:1px solid transparent}
+.tab.on{background:#fff;color:var(--ink);border-color:var(--edge);box-shadow:0 4px 12px rgba(60,100,150,.15)}
+.list{display:grid;gap:8px}
+.item{display:flex;gap:12px;align-items:center;padding:8px;border-radius:18px;background:rgba(255,255,255,.55);border:1px solid var(--edge);cursor:pointer;text-align:start;width:100%;color:var(--ink)}
+.item.sel{outline:3px solid rgba(30,167,255,.45);background:rgba(255,255,255,.85)}
+.item img{width:54px;height:54px;object-fit:cover;border-radius:12px;background:#e2ecf5;flex:none}
+.item .t{flex:1;min-width:0}
+.item .t b{display:block;font-size:1.02rem;letter-spacing:.06em;direction:ltr;text-align:right;overflow:hidden;text-overflow:ellipsis}
+.item .t small{color:var(--muted);font-weight:600}
+.empty{padding:26px 10px;text-align:center;color:var(--muted);font-weight:600}
+.more{margin-top:10px;width:100%}
+.foot{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+
+/* toast + modal */
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,30px);opacity:0;z-index:50;
+  padding:12px 18px;border-radius:16px;background:rgba(23,50,77,.92);color:#fff;font-weight:700;font-size:.9rem;max-width:min(92vw,460px);text-align:center;transition:.25s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(23,50,77,.35);display:none;align-items:center;justify-content:center;padding:16px;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.modal.open{display:flex}
+.modal .glass{max-width:520px;max-height:88vh;overflow:auto;background:rgba(255,255,255,.85)}
+.modal h2{margin:0 0 8px;font-size:1.15rem}
+.modal ol,.modal ul{margin:6px 0 12px;padding-inline-start:22px;line-height:1.9;font-size:.93rem}
+.modal code{background:rgba(30,167,255,.12);padding:1px 6px;border-radius:6px;direction:ltr;unicode-bidi:embed}
+.drop{outline:4px dashed var(--violet);outline-offset:-10px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div><div class="blob b4"></div>
+
+<div class="wrap">
+  <header class="glass">
+    <div class="logo">🛂</div>
+    <div><h1>أرشفة الجوازات التالفة</h1><p>صوّر أو امسح — الرقم يُقرأ ويُحفظ تلقائياً</p></div>
+    <div class="sp"></div>
+    <button class="ghost" id="helpBtn" aria-label="مساعدة">؟</button>
+  </header>
+
+  <main class="grid">
+    <!-- A: progress + actions -->
+    <section class="glass pa">
+      <div class="count"><b id="doneN">0</b><span>من</span><span class="tgt" id="tgtN" title="اضغط لتغيير العدد">3370</span><span>جواز مكتمل</span></div>
+      <div class="bar"><i id="barFill"></i></div>
+      <div class="chips">
+        <span class="chip ok">✓ تمت: <span id="cOk">0</span></span>
+        <span class="chip rv">⚠ تحتاج مراجعة: <span id="cRv">0</span></span>
+      </div>
+
+      <div class="actions">
+        <button class="big" id="mainBtn"><span class="ic" id="mainIc">📷</span><span id="mainTx">تصوير جواز</span></button>
+        <button class="soft" id="altBtn"></button>
+
+        <div class="row" id="saveRow"></div>
+        <div class="row" id="scanRow" hidden></div>
+        <div class="queue" id="queue"></div>
+      </div>
+    </section>
+
+    <!-- B: editor -->
+    <section class="glass pb" id="editor">
+      <div class="ph" id="ph"><span>لا يوجد جواز محدد.<br>صوّر أو اختر جوازاً للبدء.</span></div>
+      <input class="num" id="num" placeholder="رقم الجواز" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" disabled>
+      <div class="meta">
+        <div class="chips" id="curChips"></div>
+        <div class="state" id="saveState"></div>
+      </div>
+      <div class="two">
+        <button class="soft warn" id="nextRv">⚠ التالي للمراجعة</button>
+        <button class="soft danger" id="delBtn">🗑 حذف</button>
+      </div>
+    </section>
+
+    <!-- C: list -->
+    <section class="glass pc">
+      <div class="tools"><input class="search" id="search" placeholder="بحث برقم الجواز" autocomplete="off"></div>
+      <div class="tabs">
+        <button class="tab on" data-t="all">الكل</button>
+        <button class="tab" data-t="done">تمت</button>
+        <button class="tab" data-t="review">تحتاج مراجعة</button>
+      </div>
+      <div class="list" id="list"></div>
+      <button class="soft more" id="moreBtn" hidden>عرض المزيد</button>
+      <div class="foot" id="foot"></div>
+    </section>
+  </main>
+</div>
+
+<input type="file" id="fileIn" accept="image/*" multiple hidden>
+<input type="file" id="camIn" accept="image/*" capture="environment" hidden>
+<div class="toast" id="toast"></div>
+
+<div class="modal" id="helpModal">
+  <div class="glass">
+    <h2>طريقة العمل</h2>
+    <b>على الحاسبة (Chrome أو Edge):</b>
+    <ol>
+      <li>أنشئ مجلداً على قرص C باسم <code>قاعدة بيانات الجوازات التالفه</code> ثم اضغط «اختيار مجلد الحفظ» واختره (مرة واحدة).</li>
+      <li>اضغط «ربط السكنر»، واختر المجلد الذي يحفظ فيه برنامج السكنر الصور (اجعل الصيغة JPG). بعدها أي مسح جديد يُقرأ ويُحفظ لوحده.</li>
+      <li>أو اضغط «إضافة صور الجوازات» وحدّد عدة صور دفعة واحدة، أو اسحبها إلى الصفحة.</li>
+    </ol>
+    <b>على الهاتف:</b>
+    <ol>
+      <li>اضغط «تصوير جواز» — يقرأ الرقم ويحفظه داخل التطبيق.</li>
+      <li>الهاتف لا يسمح بالكتابة في مجلدات مباشرة، فاضغط «تصدير ZIP» ليخرج مجلد <code>قاعدة بيانات الجوازات التالفه</code> وبداخله مجلد لكل جواز.</li>
+    </ol>
+    <b>ملاحظات:</b>
+    <ul>
+      <li>ضع الجواز مستقيماً وصفحة البيانات كاملة في الصورة.</li>
+      <li>أول تشغيل يحتاج إنترنت لتحميل محرك القراءة، بعدها يعمل بدونه.</li>
+      <li>الجواز الذي لا يُقرأ رقمه يظهر «تحتاج مراجعة»؛ اكتب رقمه ويُحفظ ويلتحق بالمكتملة.</li>
+    </ul>
+    <button class="big" id="helpClose" style="padding:12px">تمام</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ============ منطق نقي (يُختبر منفصلاً) ============ */
+// ==PURE-START==
+const FIX={O:'0',Q:'0',D:'0',I:'1',L:'1',Z:'2',S:'5',B:'8',G:'6'};
+const fixDigits=s=>s.split('').map(c=>FIX[c]||c).join('');
+const mrzVal=c=>(c>='0'&&c<='9')?+c:((c>='A'&&c<='Z')?c.charCodeAt(0)-55:0);
+function mrzCheck(s){const w=[7,3,1];let t=0;for(let i=0;i<s.length;i++)t+=mrzVal(s[i])*w[i%3];return t%10;}
+
+// يبحث عن سطر MRZ ويستخرج رقم الجواز الذي يطابق رقم التحقق
+function findMrz(text){
+  const lines=String(text||'').toUpperCase().split(/\n/).map(l=>l.replace(/[«‹]/g,'<').replace(/[^A-Z0-9<]/g,''));
+  for(const ln of lines){
+    if(ln.length<22) continue;
+    for(let i=0;i+19<=ln.length;i++){
+      const raw=ln.substr(i,9), cd=fixDigits(ln[i+9]), nat=ln.substr(i+10,3), dob=fixDigits(ln.substr(i+13,6));
+      if(!/^\d$/.test(cd)||!/^[A-Z<]{3}$/.test(nat)||!/^\d{6}$/.test(dob)) continue;
+      const tries=[raw, raw[0]+fixDigits(raw.slice(1))];
+      for(const s of tries){
+        if(!/^[A-Z0-9]{6,9}<*$/.test(s)) continue;
+        if(mrzCheck(s)===+cd) return s.replace(/<+$/,'');
+      }
+    }
+  }
+  return '';
+}
+
+// رقم أعلى الصفحة: حرف + 7 أو 8 أرقام
+function findTop(items,H){
+  const found=new Map();
+  for(const it of items||[]){
+    const t=String(it.text||'').toUpperCase();
+    const cy=it.bbox?(it.bbox.y0+it.bbox.y1)/2:0;
+    if(H&&cy>H*0.8) continue;
+    const re=/(^|[^A-Z0-9<])([A-Z])[\s-]?([A-Z0-9]{7,8})(?![A-Z0-9<])/g;
+    let m;
+    while((m=re.exec(t))){
+      const tail=fixDigits(m[3]);
+      if(!/^\d{7,8}$/.test(tail)) continue;
+      const num=m[2]+tail;
+      const w=((H&&cy<H*0.55)?2:1)+(it.confidence||0)/100;
+      found.set(num,(found.get(num)||0)+w);
+    }
+  }
+  let best='',bs=0;
+  for(const [k,v] of found) if(v>bs){best=k;bs=v;}
+  return best;
+}
+
+/* ZIP بدون ضغط (الصور JPEG أصلاً مضغوطة) وبأسماء عربية UTF-8 */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(u8){let c=0xFFFFFFFF;for(let i=0;i<u8.length;i++)c=CRC[(c^u8[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+function makeZip(files){
+  const enc=new TextEncoder(),parts=[],central=[];let offset=0;
+  const d=new Date();
+  const dt=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1);
+  const dd=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  for(const f of files){
+    const name=enc.encode(f.path),crc=crc32(f.data),size=f.data.length;
+    const lh=new DataView(new ArrayBuffer(30));
+    lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(8,0,true);
+    lh.setUint16(10,dt,true);lh.setUint16(12,dd,true);lh.setUint32(14,crc,true);lh.setUint32(18,size,true);
+    lh.setUint32(22,size,true);lh.setUint16(26,name.length,true);lh.setUint16(28,0,true);
+    parts.push(lh.buffer,name,f.data);
+    const ch=new DataView(new ArrayBuffer(46));
+    ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);
+    ch.setUint16(10,0,true);ch.setUint16(12,dt,true);ch.setUint16(14,dd,true);ch.setUint32(16,crc,true);
+    ch.setUint32(20,size,true);ch.setUint32(24,size,true);ch.setUint16(28,name.length,true);
+    ch.setUint32(42,offset,true);
+    central.push(ch.buffer,name);
+    offset+=30+name.length+size;
+  }
+  let cs=0;for(const c of central)cs+=c.byteLength;
+  const end=new DataView(new ArrayBuffer(22));
+  end.setUint32(0,0x06054b50,true);end.setUint16(8,files.length,true);end.setUint16(10,files.length,true);
+  end.setUint32(12,cs,true);end.setUint32(16,offset,true);
+  return new Blob([...parts,...central,end.buffer],{type:'application/zip'});
+}
+// ==PURE-END==
+
+/* ============ إعدادات عامة ============ */
+const $=id=>document.getElementById(id);
+const ROOT_NAME='قاعدة بيانات الجوازات التالفه';
+const hasFS=typeof window.showDirectoryPicker==='function';
+const touch=matchMedia('(pointer:coarse)').matches;
+const TESS_URL='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+const opt={target:3370,double:true};
+const pad=n=>String(n).padStart(5,'0');
+const safe=s=>String(s).replace(/[\\/:*?"<>|]/g,'').trim();
+
+/* ============ قاعدة البيانات المحلية ============ */
+const DB=(()=>{
+  let db;
+  const open=()=>new Promise((res,rej)=>{
+    const rq=indexedDB.open('passport-archive',1);
+    rq.onupgradeneeded=()=>{const d=rq.result;d.createObjectStore('records',{keyPath:'id',autoIncrement:true});d.createObjectStore('kv');};
+    rq.onsuccess=()=>{db=rq.result;res();};rq.onerror=()=>rej(rq.error);
+  });
+  const tx=(s,m,fn)=>new Promise((res,rej)=>{
+    const t=db.transaction(s,m),st=t.objectStore(s),rq=fn(st);
+    t.oncomplete=()=>res(rq&&rq.result);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);
+  });
+  return{open,
+    add:(s,v)=>tx(s,'readwrite',st=>st.add(v)),
+    put:(s,v,k)=>tx(s,'readwrite',st=>k===undefined?st.put(v):st.put(v,k)),
+    get:(s,k)=>tx(s,'readonly',st=>st.get(k)),
+    all:s=>tx(s,'readonly',st=>st.getAll()),
+    del:(s,k)=>tx(s,'readwrite',st=>st.delete(k))};
+})();
+
+/* ============ الحالة ============ */
+let records=[],cur=null,tab='all',limit=60,curURL=null;
+let rootH=null,rootOK=false,scanH=null,scanOK=false,watching=false,watchTimer=null;
+let processed=new Set(),pending=new Map();
+const queue=[];let busy=false,worker=null,engineFailed=false;
+let chain=Promise.resolve();
+const lock=fn=>{const p=chain.then(()=>fn());chain=p.catch(()=>{});return p;};
+
+/* ============ واجهة عامة ============ */
+let toastT;
+function toast(msg,ms=2600){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),ms);}
+const fmt=ts=>{const d=new Date(ts),z=n=>String(n).padStart(2,'0');return`${z(d.getDate())}/${z(d.getMonth()+1)} ${z(d.getHours())}:${z(d.getMinutes())}`;};
+
+/* ============ الصور ============ */
+async function loadBitmap(file){
+  try{return await createImageBitmap(file,{imageOrientation:'from-image'});}
+  catch(e){
+    return await new Promise((res,rej)=>{const u=URL.createObjectURL(file),im=new Image();
+      im.onload=()=>{res(im);};im.onerror=()=>rej(new Error('decode'));im.src=u;});
+  }
+}
+const bw=b=>b.naturalWidth||b.width, bh=b=>b.naturalHeight||b.height;
+function drawScaled(bmp,maxSide,filter,allowUp){
+  let s=maxSide/Math.max(bw(bmp),bh(bmp));if(!allowUp)s=Math.min(1,s);s=Math.min(s,3);
+  const c=document.createElement('canvas');c.width=Math.max(1,Math.round(bw(bmp)*s));c.height=Math.max(1,Math.round(bh(bmp)*s));
+  const x=c.getContext('2d');if(filter)x.filter=filter;x.drawImage(bmp,0,0,c.width,c.height);return c;
+}
+const toBlob=(c,q)=>new Promise(r=>c.toBlob(r,'image/jpeg',q));
+
+/* ============ قراءة الرقم (OCR) ============ */
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>rej(new Error('script'));document.head.appendChild(s);});}
+async function getWorker(){
+  if(worker)return worker;
+  if(!window.Tesseract)await loadScript(TESS_URL);
+  worker=await Tesseract.createWorker('eng',1,{});
+  return worker;
+}
+async function readNumber(bmp){
+  let w;
+  try{w=await getWorker();}catch(e){return{number:'',verified:false,engine:false};}
+  try{
+    const c=drawScaled(bmp,2200,'grayscale(1) contrast(1.25)',true);
+    await w.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:''});
+    const r1=(await w.recognize(c)).data;
+    const items=(r1.lines&&r1.lines.length)?r1.lines:(r1.words||[]);
+    const mrz1=findMrz(r1.text);
+    if(mrz1)return{number:mrz1,verified:true,engine:true};
+    let top=findTop(items,c.height);
+    if(opt.double||!top){
+      await w.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'});
+      const r2=(await w.recognize(c)).data;
+      const mrz2=findMrz(r2.text);
+      if(mrz2)return{number:mrz2,verified:true,engine:true};
+      if(!top){const it2=(r2.lines&&r2.lines.length)?r2.lines:(r2.words||[]);top=findTop(it2,c.height);}
+    }
+    return{number:top||'',verified:false,engine:true};
+  }catch(e){console.error(e);return{number:'',verified:false,engine:true};}
+}
+
+/* ============ الحفظ على القرص (Chrome / Edge) ============ */
+async function ensureRoot(interactive){
+  if(!rootH)return rootOK=false;
+  try{
+    let p=await rootH.queryPermission({mode:'readwrite'});
+    if(p!=='granted'&&interactive)p=await rootH.requestPermission({mode:'readwrite'});
+    return rootOK=(p==='granted');
+  }catch(e){return rootOK=false;}
+}
+async function writeFile(dir,name,data){
+  const fh=await dir.getFileHandle(name,{create:true});
+  const w=await fh.createWritable();await w.write(data);await w.close();
+}
+const jsonOf=r=>JSON.stringify({passportNumber:r.number,status:r.status==='done'?'complete':'needs-review',verifiedByMRZ:!!r.verified,createdAt:new Date(r.createdAt).toISOString(),image:'passport.jpg'},null,2);
+function folderFor(r){
+  if(!r.number)return'مراجعة_'+pad(r.id);
+  const base=safe(r.number);
+  const dup=records.find(x=>x.id!==r.id&&x.folder===base);
+  r.dup=!!dup;
+  return dup?`${base}_${r.id}`:base;
+}
+async function saveToDisk(r){           // أول حفظ: يكتب المجلد ثم يحذف النسخة الداخلية
+  const d=await rootH.getDirectoryHandle(r.folder,{create:true});
+  await writeFile(d,'passport.jpg',r.blob);
+  await writeFile(d,'data.json',jsonOf(r));
+  delete r.blob;r.unsaved=false;
+}
+async function renameOnDisk(oldName,newName){
+  if(oldName===newName)return;
+  const old=await rootH.getDirectoryHandle(oldName);
+  const nd=await rootH.getDirectoryHandle(newName,{create:true});
+  for await(const[n,h]of old.entries()){if(h.kind==='file'){await writeFile(nd,n,await h.getFile());}}
+  await rootH.removeEntry(oldName,{recursive:true});
+}
+async function flushUnsaved(){
+  if(!hasFS||!rootH||!(await ensureRoot(false)))return;
+  const list=records.filter(r=>r.blob);
+  if(!list.length)return;
+  let n=0;
+  for(const r of list){
+    try{await lock(async()=>{r.folder=folderFor(r);await saveToDisk(r);await DB.put('records',r);});n++;}
+    catch(e){console.error(e);break;}
+  }
+  if(n)toast(`تم حفظ ${n} جواز في المجلد`);
+  refreshAll();
+}
+
+/* ============ معالجة صورة واحدة ============ */
+async function processFile(file){
+  const bmp=await loadBitmap(file);
+  const diskMode=hasFS;
+  const big=drawScaled(bmp,diskMode?2400:1800);
+  const blob=await toBlob(big,diskMode?0.92:0.85);
+  const thumb=drawScaled(bmp,220).toDataURL('image/jpeg',0.7);
+  const ocr=await readNumber(bmp);
+  if(ocr.engine===false&&!engineFailed){engineFailed=true;toast('تعذر تحميل محرك القراءة (يحتاج إنترنت أول مرة). تم الحفظ كـ «تحتاج مراجعة».',5000);}
+  const r={number:ocr.number,ocrNumber:ocr.number,verified:!!ocr.verified,status:ocr.number?'done':'review',
+    createdAt:Date.now(),thumb,blob,unsaved:diskMode,exported:false,manual:false,savedNumber:ocr.number};
+  r.id=await DB.add('records',r);
+  await lock(async()=>{
+    r.folder=folderFor(r);
+    if(diskMode&&rootH&&await ensureRoot(false)){
+      try{await saveToDisk(r);}catch(e){console.error(e);}
+    }
+    await DB.put('records',r);
+  });
+  records.unshift(r);
+  if(r.dup)toast('تنبيه: هذا الرقم موجود مسبقاً — حُفظ كنسخة مكررة');
+  else if(r.number)toast(`✓ ${r.number} — تم الحفظ`,1800);
+  else if(ocr.engine!==false)toast('⚠ لم يُقرأ الرقم — انتقل إلى «تحتاج مراجعة»',2800);
+  setCurrent(r,touch&&!r.number&&queue.length===0);refreshAll();
+}
+async function runQueue(){
+  if(busy)return;busy=true;
+  while(queue.length){
+    showQueue();
+    const it=queue.shift();
+    try{await processFile(it.file);}
+    catch(e){console.error(e);toast('تعذرت قراءة الملف: '+(it.file.name||'صورة')+' — تأكد أنه JPG أو PNG');}
+  }
+  busy=false;showQueue();
+}
+function enqueue(files){
+  const imgs=[...files].filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|webp|bmp)$/i.test(f.name));
+  if(!imgs.length){toast('اختر صور بصيغة JPG أو PNG');return;}
+  imgs.forEach(file=>queue.push({file}));runQueue();
+}
+function showQueue(){
+  const q=$('queue');
+  q.innerHTML=busy||queue.length?`<span class="spin"></span>جاري القراءة… ${queue.length?`(${queue.length} بالانتظار)`:''}`:'';
+}
+
+/* ============ التعديل والحفظ التلقائي ============ */
+let saveT=null;
+function setState(t,cls){const s=$('saveState');s.textContent=t;s.className='state '+(cls||'');}
+function onType(){
+  if(!cur)return;
+  const v=$('num').value.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  $('num').value=v;cur.number=v;
+  $('num').classList.toggle('review',!v);
+  setState('… جارٍ الحفظ');
+  clearTimeout(saveT);saveT=setTimeout(()=>commit(cur),800);
+}
+async function commit(r){
+  if(!r)return;clearTimeout(saveT);
+  try{
+    await lock(async()=>{
+      const old=r.folder;
+      r.status=r.number?'done':'review';
+      r.manual=r.number!==r.ocrNumber;
+      if(r.savedNumber!==r.number){r.exported=false;r.savedNumber=r.number;}
+      r.verified=!!r.verified&&!r.manual;
+      r.folder=folderFor(r);
+      if(hasFS&&!r.blob&&rootH&&await ensureRoot(false)){
+        await renameOnDisk(old,r.folder);
+        const d=await rootH.getDirectoryHandle(r.folder,{create:true});
+        await writeFile(d,'data.json',jsonOf(r));
+      }
+      await DB.put('records',r);
+    });
+    if(r.dup)toast('تنبيه: الرقم موجود مسبقاً في جواز آخر');
+    if(cur===r)setState(r.blob&&hasFS?'⚠ محفوظ داخل التطبيق — بانتظار المجلد':'✓ محفوظ تلقائياً',r.blob&&hasFS?'wr':'ok');
+  }catch(e){console.error(e);if(cur===r)setState('⚠ تعذر الحفظ',"wr");toast('تعذر الحفظ في المجلد — تأكد من تفعيل مجلد الحفظ');}
+  refreshAll();
+}
+
+/* ============ عرض ============ */
+async function imageURLFor(r){
+  if(r.blob)return URL.createObjectURL(r.blob);
+  try{
+    const d=await rootH.getDirectoryHandle(r.folder);
+    const f=await(await d.getFileHandle('passport.jpg')).getFile();
+    return URL.createObjectURL(f);
+  }catch(e){return null;}
+}
+async function setCurrent(r,scroll){
+  cur=r;
+  if(curURL){URL.revokeObjectURL(curURL);curURL=null;}
+  const num=$('num');
+  if(!r){$('ph').innerHTML='<span>لا يوجد جواز محدد.<br>صوّر أو اختر جوازاً للبدء.</span>';num.value='';num.disabled=true;$('curChips').innerHTML='';setState('');renderList();return;}
+  num.disabled=false;num.value=r.number||'';num.classList.toggle('review',!r.number);
+  $('ph').innerHTML=`<img alt="" src="${r.thumb}">`;
+  const u=await imageURLFor(r);
+  if(cur===r&&u){curURL=u;$('ph').innerHTML=`<img alt="" src="${u}">`;}
+  setState(r.blob&&hasFS?'⚠ محفوظ داخل التطبيق — بانتظار المجلد':'✓ محفوظ تلقائياً',r.blob&&hasFS?'wr':'ok');
+  renderChips();renderList();
+  if(scroll)$('editor').scrollIntoView({behavior:'smooth',block:'start'});
+  if(!r.number&&scroll)num.focus();
+}
+function chipsFor(r){
+  let h=r.status==='done'?'<span class="chip ok">✓ تمت</span>':'<span class="chip rv">⚠ تحتاج مراجعة</span>';
+  if(r.verified)h+='<span class="chip vf">مؤكد بـ MRZ</span>';
+  else if(r.manual&&r.number)h+='<span class="chip vf">✎ يدوي</span>';
+  if(r.dup)h+='<span class="chip dp">مكرر</span>';
+  return h;
+}
+function renderChips(){$('curChips').innerHTML=cur?chipsFor(cur):'';}
+function renderStats(){
+  const ok=records.filter(r=>r.status==='done').length,rv=records.length-ok;
+  $('doneN').textContent=ok;$('cOk').textContent=ok;$('cRv').textContent=rv;$('tgtN').textContent=opt.target;
+  $('barFill').style.width=Math.min(100,ok/opt.target*100)+'%';
+}
+function renderList(){
+  const q=$('search').value.trim().toUpperCase();
+  const arr=records.filter(r=>(tab==='all'||r.status===tab)&&(!q||(r.number||'').includes(q)));
+  const shown=arr.slice(0,limit);
+  $('list').innerHTML=shown.length?shown.map(r=>`
+    <button class="item ${cur&&cur.id===r.id?'sel':''}" data-id="${r.id}">
+      <img alt="" src="${r.thumb}">
+      <div class="t"><b>${r.number||'— بدون رقم —'}</b><small>${fmt(r.createdAt)}</small></div>
+      <div>${chipsFor(r).replace(/<span class="chip vf">[^<]*<\/span>/g,'')}</div>
+    </button>`).join(''):`<div class="empty">${records.length?'لا توجد نتائج':'لم يُضف أي جواز بعد'}</div>`;
+  $('moreBtn').hidden=arr.length<=limit;
+}
+function renderFoot(){
+  const f=$('foot');let h='';
+  if(!hasFS){
+    const n=records.filter(r=>r.blob&&!r.exported).length;
+    h+=`<button class="soft good" id="zipBtn" ${n?'':'disabled'}>⬇ تصدير ZIP (${n})</button>`;
+  }
+  h+=`<button class="soft" id="csvBtn">📄 جدول CSV</button>`;
+  f.innerHTML=h;
+}
+function renderSave(){
+  const row=$('saveRow');
+  const unsaved=records.filter(r=>r.blob).length;
+  if(!hasFS){
+    row.innerHTML=`<div><span class="dot on"></span>الحفظ داخل التطبيق<small>للحصول على المجلدات استخدم «تصدير ZIP»</small></div>`;return;
+  }
+  if(!rootH){row.innerHTML=`<div><span class="dot"></span>لم يُحدد مجلد الحفظ<small>أنشئ مجلداً على C: ثم اختره</small></div><button class="soft" id="pickRoot">اختيار مجلد الحفظ</button>`;return;}
+  if(!rootOK){row.innerHTML=`<div><span class="dot wait"></span>مجلد الحفظ: ${rootH.name}<small>اضغط لتفعيل الكتابة في هذه الجلسة</small></div><button class="soft warn" id="actRoot">تفعيل</button>`;return;}
+  row.innerHTML=`<div><span class="dot on"></span>يحفظ في: ${rootH.name}${unsaved?`<small>${unsaved} بانتظار الحفظ في المجلد</small>`:'<small>كل جواز في مجلد باسم رقمه</small>'}</div><button class="soft" id="pickRoot">تغيير</button>`;
+}
+function renderScan(){
+  const row=$('scanRow');
+  if(!hasFS){row.hidden=true;return;}
+  row.hidden=false;
+  if(!scanH){row.innerHTML=`<div><span class="dot"></span>السكنر غير مربوط<small>اختر مجلد حفظ صور السكنر ليُقرأ تلقائياً</small></div><button class="soft" id="pickScan">ربط السكنر</button>`;return;}
+  if(!watching){row.innerHTML=`<div><span class="dot wait"></span>السكنر: ${scanH.name}<small>المراقبة متوقفة</small></div><button class="soft warn" id="startScan">تشغيل</button>`;return;}
+  row.innerHTML=`<div><span class="dot on"></span>السكنر متصل — يراقب: ${scanH.name}<small>أي مسح جديد يُقرأ ويُحفظ لوحده</small></div><button class="soft" id="stopScan">إيقاف</button>`;
+}
+function refreshAll(){renderStats();renderList();renderChips();renderSave();renderScan();renderFoot();}
+
+/* ============ مراقبة مجلد السكنر ============ */
+async function listScanImages(){
+  const out=[];
+  for await(const[name,h]of scanH.entries()){
+    if(h.kind!=='file'||!/\.(jpe?g|png|webp|bmp)$/i.test(name))continue;
+    try{const f=await h.getFile();out.push({name,f,key:`${name}|${f.size}|${f.lastModified}`});}catch(e){}
+  }
+  return out;
+}
+const saveProcessed=()=>DB.put('kv',[...processed].slice(-20000),'processed');
+async function pollScan(){
+  if(!watching||!scanH)return;
+  try{
+    const imgs=await listScanImages();
+    const ready=[];
+    for(const it of imgs){
+      if(processed.has(it.key))continue;
+      if(pending.get(it.name)===it.key){ready.push(it);pending.delete(it.name);}else pending.set(it.name,it.key);
+    }
+    if(ready.length){
+      ready.sort((a,b)=>a.f.lastModified-b.f.lastModified);
+      ready.forEach(it=>{processed.add(it.key);queue.push({file:it.f});});
+      await saveProcessed();runQueue();
+      toast(`تم التقاط ${ready.length} مسح جديد من السكنر`);
+    }
+  }catch(e){console.error(e);}
+}
+async function startWatch(interactive){
+  if(!scanH)return;
+  try{
+    let p=await scanH.queryPermission({mode:'read'});
+    if(p!=='granted'&&interactive)p=await scanH.requestPermission({mode:'read'});
+    if(p!=='granted'){scanOK=false;renderScan();return;}
+  }catch(e){return;}
+  scanOK=true;watching=true;clearInterval(watchTimer);watchTimer=setInterval(pollScan,2500);pollScan();renderScan();
+}
+function stopWatch(){watching=false;clearInterval(watchTimer);renderScan();}
+async function pickScan(){
+  try{
+    scanH=await showDirectoryPicker({id:'passport-scan',mode:'read'});
+    await DB.put('kv',scanH,'scanDir');
+    const imgs=(await listScanImages()).filter(i=>!processed.has(i.key));
+    if(imgs.length){
+      if(confirm(`يوجد ${imgs.length} صورة داخل هذا المجلد.\nهل تريد قراءتها الآن؟\n(إلغاء = تجاهلها والبدء من المسح الجديد فقط)`)){
+        // تُقرأ عبر أول دورة مراقبة
+      }else{imgs.forEach(i=>processed.add(i.key));await saveProcessed();}
+    }
+    await startWatch(true);
+  }catch(e){if(e&&e.name!=='AbortError')toast('تعذر اختيار هذا المجلد');}
+}
+
+/* ============ اختيار مجلد الحفظ ============ */
+async function pickRoot(){
+  try{
+    rootH=await showDirectoryPicker({id:'passport-root',mode:'readwrite'});
+    await DB.put('kv',rootH,'saveDir');
+    await ensureRoot(true);
+    toast('تم اختيار مجلد الحفظ');
+    await flushUnsaved();
+  }catch(e){
+    if(e&&e.name!=='AbortError')toast('لا يسمح المتصفح بهذا المجلد. أنشئ مجلداً جديداً داخل C: (وليس C: نفسه) واختره.',5000);
+  }
+  refreshAll();
+}
+
+/* ============ تصدير ============ */
+function download(blob,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);
+}
+async function exportZip(){
+  const batch=records.filter(r=>r.blob&&!r.exported).slice(0,150);
+  if(!batch.length)return;
+  toast('جاري تجهيز الملف…');
+  const files=[];
+  for(const r of batch){
+    const base=`${ROOT_NAME}/${r.folder}/`;
+    files.push({path:base+'passport.jpg',data:new Uint8Array(await r.blob.arrayBuffer())});
+    files.push({path:base+'data.json',data:new TextEncoder().encode(jsonOf(r))});
+  }
+  const n=Math.floor(records.filter(r=>r.exported).length/150)+1;
+  download(makeZip(files),`${ROOT_NAME}_دفعة${n}.zip`);
+  for(const r of batch){r.exported=true;await DB.put('records',r);}
+  refreshAll();toast(`تم تصدير ${batch.length} جواز — فك الضغط ثم انقل المجلد إلى الحاسبة`,4500);
+}
+function exportCsv(){
+  const esc=v=>`"${String(v).replace(/"/g,'""')}"`;
+  const rows=[['رقم الجواز','الحالة','مؤكد MRZ','التاريخ','اسم المجلد']];
+  [...records].reverse().forEach(r=>rows.push([r.number,r.status==='done'?'تمت':'تحتاج مراجعة',r.verified?'نعم':'لا',new Date(r.createdAt).toLocaleString('en-GB'),r.folder]));
+  download(new Blob(['\ufeff'+rows.map(r=>r.map(esc).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),'الجوازات.csv');
+}
+
+/* ============ الأحداث ============ */
+function bind(){
+  $('mainIc').textContent=touch?'📷':'📥';
+  $('mainTx').textContent=touch?'تصوير جواز':'إضافة صور الجوازات';
+  $('altBtn').textContent='🖼 اختيار من المعرض';
+  $('altBtn').hidden=!touch;
+  $('mainBtn').onclick=()=>(touch?$('camIn'):$('fileIn')).click();
+  $('altBtn').onclick=()=>$('fileIn').click();
+  $('fileIn').onchange=e=>{enqueue(e.target.files);e.target.value='';};
+  $('camIn').onchange=e=>{enqueue(e.target.files);e.target.value='';};
+  $('num').oninput=onType;
+  $('num').onblur=()=>{if(cur)commit(cur);};
+  $('num').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();commit(cur);$('num').blur();}};
+  $('search').oninput=()=>{limit=60;renderList();};
+  document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{tab=b.dataset.t;limit=60;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));renderList();});
+  $('moreBtn').onclick=()=>{limit+=60;renderList();};
+  $('list').onclick=e=>{const it=e.target.closest('.item');if(!it)return;const r=records.find(x=>x.id===+it.dataset.id);if(r){if(cur&&cur!==r)commit(cur);setCurrent(r,true);}};
+  $('nextRv').onclick=()=>{
+    const rv=records.filter(r=>r.status==='review'&&r!==cur);
+    if(!rv.length){toast('لا توجد جوازات تحتاج مراجعة 🎉');return;}
+    const i=cur?records.indexOf(cur):-1;
+    setCurrent(records.slice(i+1).find(r=>r.status==='review')||rv[0],true);
+  };
+  $('delBtn').onclick=async()=>{
+    if(!cur||!confirm('حذف هذا الجواز نهائياً؟'))return;
+    const r=cur;
+    await lock(async()=>{
+      if(hasFS&&!r.blob&&rootH&&await ensureRoot(false)){try{await rootH.removeEntry(r.folder,{recursive:true});}catch(e){}}
+      await DB.del('records',r.id);
+    });
+    records=records.filter(x=>x!==r);setCurrent(records[0]||null);refreshAll();
+  };
+  $('tgtN').onclick=async()=>{const v=parseInt(prompt('العدد المطلوب أرشفته:',opt.target),10);if(v>0){opt.target=v;await DB.put('kv',v,'target');renderStats();}};
+  $('helpBtn').onclick=()=>$('helpModal').classList.add('open');
+  $('helpClose').onclick=()=>$('helpModal').classList.remove('open');
+  $('helpModal').onclick=e=>{if(e.target===$('helpModal'))$('helpModal').classList.remove('open');};
+  document.addEventListener('click',e=>{
+    const id=e.target.closest('button')?.id;
+    if(id==='pickRoot')pickRoot();
+    else if(id==='actRoot'){ensureRoot(true).then(async ok=>{if(ok)await flushUnsaved();refreshAll();});}
+    else if(id==='pickScan')pickScan();
+    else if(id==='startScan')startWatch(true);
+    else if(id==='stopScan')stopWatch();
+    else if(id==='zipBtn')exportZip();
+    else if(id==='csvBtn')exportCsv();
+  });
+  ['dragover','dragenter'].forEach(t=>document.addEventListener(t,e=>{e.preventDefault();document.body.classList.add('drop');}));
+  ['dragleave','drop'].forEach(t=>document.addEventListener(t,e=>{e.preventDefault();document.body.classList.remove('drop');}));
+  document.addEventListener('drop',e=>{if(e.dataTransfer&&e.dataTransfer.files.length)enqueue(e.dataTransfer.files);});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden&&cur)commit(cur);});
+}
+
+/* ============ تشغيل ============ */
+(async function init(){
+  bind();
+  try{
+    await DB.open();
+    records=(await DB.all('records')).sort((a,b)=>b.id-a.id);
+    opt.target=(await DB.get('kv','target'))||3370;
+    processed=new Set((await DB.get('kv','processed'))||[]);
+    if(hasFS){
+      rootH=(await DB.get('kv','saveDir'))||null;scanH=(await DB.get('kv','scanDir'))||null;
+      if(rootH)await ensureRoot(false);
+      if(scanH){try{if(await scanH.queryPermission({mode:'read'})==='granted')await startWatch(false);}catch(e){}}
+    }
+    if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+  }catch(e){console.error(e);toast('تعذر فتح التخزين المحلي — افتح الملف من Chrome أو Edge');}
+  refreshAll();
+  if(records.length)setCurrent(records[0]);
+  if(hasFS&&rootOK)flushUnsaved();
+})();
+</script>
+</body>
+</html>
