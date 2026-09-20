@@ -224,35 +224,15 @@ button{font-family:inherit;cursor:pointer;border:0}
 // ==PURE-START==
 const FIX={O:'0',Q:'0',D:'0',I:'1',L:'1',Z:'2',S:'5',B:'8',G:'6'};
 const fixDigits=s=>s.split('').map(c=>FIX[c]||c).join('');
-const mrzVal=c=>(c>='0'&&c<='9')?+c:((c>='A'&&c<='Z')?c.charCodeAt(0)-55:0);
-function mrzCheck(s){const w=[7,3,1];let t=0;for(let i=0;i<s.length;i++)t+=mrzVal(s[i])*w[i%3];return t%10;}
 
-// يبحث عن سطر MRZ ويستخرج رقم الجواز الذي يطابق رقم التحقق
-function findMrz(text){
-  const lines=String(text||'').toUpperCase().split(/\n/).map(l=>l.replace(/[«‹]/g,'<').replace(/[^A-Z0-9<]/g,''));
-  for(const ln of lines){
-    if(ln.length<22) continue;
-    for(let i=0;i+19<=ln.length;i++){
-      const raw=ln.substr(i,9), cd=fixDigits(ln[i+9]), nat=ln.substr(i+10,3), dob=fixDigits(ln.substr(i+13,6));
-      if(!/^\d$/.test(cd)||!/^[A-Z<]{3}$/.test(nat)||!/^\d{6}$/.test(dob)) continue;
-      const tries=[raw, raw[0]+fixDigits(raw.slice(1))];
-      for(const s of tries){
-        if(!/^[A-Z0-9]{6,9}<*$/.test(s)) continue;
-        if(mrzCheck(s)===+cd) return s.replace(/<+$/,'');
-      }
-    }
-  }
-  return '';
-}
-
-// رقم أعلى الصفحة: حرف + 7 أو 8 أرقام
+// رقم أعلى الصفحة فقط: حرف A أو B متبوعاً بأرقام فقط (7 أو 8 أرقام) — لا قراءة لسطر MRZ إطلاقاً
 function findTop(items,H){
   const found=new Map();
   for(const it of items||[]){
     const t=String(it.text||'').toUpperCase();
     const cy=it.bbox?(it.bbox.y0+it.bbox.y1)/2:0;
     if(H&&cy>H*0.8) continue;
-    const re=/(^|[^A-Z0-9<])([A-Z])[\s-]?([A-Z0-9]{7,8})(?![A-Z0-9<])/g;
+    const re=/(^|[^A-Z0-9])([AB])[\s-]?([A-Z0-9]{7,8})(?![A-Z0-9])/g;
     let m;
     while((m=re.exec(t))){
       const tail=fixDigits(m[3]);
@@ -370,22 +350,17 @@ async function readNumber(bmp){
   try{w=await getWorker();}catch(e){return{number:'',verified:false,engine:false};}
   try{
     const c=drawScaled(bmp,2200,'grayscale(1) contrast(1.25)',true);
-    // تمريرة واحدة مقيّدة بحروف/أرقام الجواز فقط — أسرع وأدق لأنها لا تلتبس بعلامات أخرى
-    await w.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'});
+    await w.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});
     const r1=(await w.recognize(c)).data;
-    const mrz1=findMrz(r1.text);
-    if(mrz1)return{number:mrz1,verified:true,engine:true};
     const items1=(r1.lines&&r1.lines.length)?r1.lines:(r1.words||[]);
-    const top1=findTop(items1,c.height);
-    if(top1)return{number:top1,verified:false,engine:true};
-    // تمريرة احتياطية فقط عند فشل الأولى (صورة مائلة/غير واضحة) — بدون قيود على الأحرف
-    await w.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:''});
+    let top=findTop(items1,c.height);
+    if(top)return{number:top,verified:false,engine:true};
+    // تمريرة احتياطية فقط عند فشل الأولى (صورة مائلة/غير واضحة)
+    await w.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'});
     const r2=(await w.recognize(c)).data;
-    const mrz2=findMrz(r2.text);
-    if(mrz2)return{number:mrz2,verified:true,engine:true};
     const items2=(r2.lines&&r2.lines.length)?r2.lines:(r2.words||[]);
-    const top2=findTop(items2,c.height);
-    return{number:top2||'',verified:false,engine:true};
+    top=findTop(items2,c.height);
+    return{number:top||'',verified:false,engine:true};
   }catch(e){console.error(e);return{number:'',verified:false,engine:true};}
 }
 
@@ -402,7 +377,7 @@ async function writeFile(dir,name,data){
   const fh=await dir.getFileHandle(name,{create:true});
   const w=await fh.createWritable();await w.write(data);await w.close();
 }
-const jsonOf=r=>JSON.stringify({passportNumber:r.number,status:r.status==='done'?'complete':'needs-review',verifiedByMRZ:!!r.verified,createdAt:new Date(r.createdAt).toISOString(),image:r.img||'passport.jpg'},null,2);
+const jsonOf=r=>JSON.stringify({passportNumber:r.number,status:r.status==='done'?'complete':'needs-review',manuallyEdited:!!r.manual,createdAt:new Date(r.createdAt).toISOString(),image:r.img||'passport.jpg'},null,2);
 // يحدد مجلد/اسم ملفات هذا الجواز. إذا تكرر رقم الجواز فكل النسخ تُحفظ في نفس المجلد
 // (passport.jpg للأولى، passport_2.jpg وdata_2.json للثانية...وهكذا) بدل إنشاء مجلد منفصل لكل نسخة.
 function assignSlot(r){
@@ -563,8 +538,7 @@ async function setCurrent(r,scroll){
 }
 function chipsFor(r){
   let h=r.status==='done'?'<span class="chip ok">✓ تمت</span>':'<span class="chip rv">⚠ تحتاج مراجعة</span>';
-  if(r.verified)h+='<span class="chip vf">مؤكد بـ MRZ</span>';
-  else if(r.manual&&r.number)h+='<span class="chip vf">✎ يدوي</span>';
+  if(r.manual&&r.number)h+='<span class="chip vf">✎ يدوي</span>';
   if(r.dup)h+='<span class="chip dp">مكرر</span>';
   return h;
 }
@@ -702,8 +676,8 @@ async function exportZip(){
 }
 function exportCsv(){
   const esc=v=>`"${String(v).replace(/"/g,'""')}"`;
-  const rows=[['رقم الجواز','الحالة','مؤكد MRZ','التاريخ','اسم المجلد']];
-  [...records].reverse().forEach(r=>rows.push([r.number,r.status==='done'?'تمت':'تحتاج مراجعة',r.verified?'نعم':'لا',new Date(r.createdAt).toLocaleString('en-GB'),r.folder]));
+  const rows=[['رقم الجواز','الحالة','تعديل يدوي','التاريخ','اسم المجلد']];
+  [...records].reverse().forEach(r=>rows.push([r.number,r.status==='done'?'تمت':'تحتاج مراجعة',r.manual?'نعم':'لا',new Date(r.createdAt).toLocaleString('en-GB'),r.folder]));
   download(new Blob(['\ufeff'+rows.map(r=>r.map(esc).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'}),'الجوازات.csv');
 }
 
