@@ -304,7 +304,7 @@ const ROOT_NAME='قاعدة بيانات الجوازات التالفه';
 const hasFS=typeof window.showDirectoryPicker==='function';
 const touch=matchMedia('(pointer:coarse)').matches;
 const TESS_URL='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
-const opt={target:3370,double:true};
+const opt={target:3370};
 const pad=n=>String(n).padStart(5,'0');
 const safe=s=>String(s).replace(/[\\/:*?"<>|]/g,'').trim();
 
@@ -370,20 +370,22 @@ async function readNumber(bmp){
   try{w=await getWorker();}catch(e){return{number:'',verified:false,engine:false};}
   try{
     const c=drawScaled(bmp,2200,'grayscale(1) contrast(1.25)',true);
-    await w.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:''});
+    // تمريرة واحدة مقيّدة بحروف/أرقام الجواز فقط — أسرع وأدق لأنها لا تلتبس بعلامات أخرى
+    await w.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'});
     const r1=(await w.recognize(c)).data;
-    const items=(r1.lines&&r1.lines.length)?r1.lines:(r1.words||[]);
     const mrz1=findMrz(r1.text);
     if(mrz1)return{number:mrz1,verified:true,engine:true};
-    let top=findTop(items,c.height);
-    if(opt.double||!top){
-      await w.setParameters({tessedit_pageseg_mode:'6',tessedit_char_whitelist:'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<'});
-      const r2=(await w.recognize(c)).data;
-      const mrz2=findMrz(r2.text);
-      if(mrz2)return{number:mrz2,verified:true,engine:true};
-      if(!top){const it2=(r2.lines&&r2.lines.length)?r2.lines:(r2.words||[]);top=findTop(it2,c.height);}
-    }
-    return{number:top||'',verified:false,engine:true};
+    const items1=(r1.lines&&r1.lines.length)?r1.lines:(r1.words||[]);
+    const top1=findTop(items1,c.height);
+    if(top1)return{number:top1,verified:false,engine:true};
+    // تمريرة احتياطية فقط عند فشل الأولى (صورة مائلة/غير واضحة) — بدون قيود على الأحرف
+    await w.setParameters({tessedit_pageseg_mode:'11',tessedit_char_whitelist:''});
+    const r2=(await w.recognize(c)).data;
+    const mrz2=findMrz(r2.text);
+    if(mrz2)return{number:mrz2,verified:true,engine:true};
+    const items2=(r2.lines&&r2.lines.length)?r2.lines:(r2.words||[]);
+    const top2=findTop(items2,c.height);
+    return{number:top2||'',verified:false,engine:true};
   }catch(e){console.error(e);return{number:'',verified:false,engine:true};}
 }
 
@@ -400,26 +402,40 @@ async function writeFile(dir,name,data){
   const fh=await dir.getFileHandle(name,{create:true});
   const w=await fh.createWritable();await w.write(data);await w.close();
 }
-const jsonOf=r=>JSON.stringify({passportNumber:r.number,status:r.status==='done'?'complete':'needs-review',verifiedByMRZ:!!r.verified,createdAt:new Date(r.createdAt).toISOString(),image:'passport.jpg'},null,2);
-function folderFor(r){
-  if(!r.number)return'مراجعة_'+pad(r.id);
-  const base=safe(r.number);
-  const dup=records.find(x=>x.id!==r.id&&x.folder===base);
-  r.dup=!!dup;
-  return dup?`${base}_${r.id}`:base;
+const jsonOf=r=>JSON.stringify({passportNumber:r.number,status:r.status==='done'?'complete':'needs-review',verifiedByMRZ:!!r.verified,createdAt:new Date(r.createdAt).toISOString(),image:r.img||'passport.jpg'},null,2);
+// يحدد مجلد/اسم ملفات هذا الجواز. إذا تكرر رقم الجواز فكل النسخ تُحفظ في نفس المجلد
+// (passport.jpg للأولى، passport_2.jpg وdata_2.json للثانية...وهكذا) بدل إنشاء مجلد منفصل لكل نسخة.
+function assignSlot(r){
+  if(!r.number){r.folder='مراجعة_'+pad(r.id);r.img='passport.jpg';r.json='data.json';r.dup=false;r.assignedNumber=r.number;return;}
+  const before=records.filter(x=>x!==r&&x.number===r.number).length;
+  r.folder=safe(r.number);
+  r.dup=before>0;
+  r.img=before===0?'passport.jpg':`passport_${before+1}.jpg`;
+  r.json=before===0?'data.json':`data_${before+1}.json`;
+  r.assignedNumber=r.number;
 }
-async function saveToDisk(r){           // أول حفظ: يكتب المجلد ثم يحذف النسخة الداخلية
+async function saveToDisk(r){           // أول حفظ: يكتب الملفات في مجلد رقم الجواز ثم يحذف النسخة الداخلية
   const d=await rootH.getDirectoryHandle(r.folder,{create:true});
-  await writeFile(d,'passport.jpg',r.blob);
-  await writeFile(d,'data.json',jsonOf(r));
+  await writeFile(d,r.img,r.blob);
+  await writeFile(d,r.json,jsonOf(r));
   delete r.blob;r.unsaved=false;
 }
-async function renameOnDisk(oldName,newName){
-  if(oldName===newName)return;
-  const old=await rootH.getDirectoryHandle(oldName);
-  const nd=await rootH.getDirectoryHandle(newName,{create:true});
-  for await(const[n,h]of old.entries()){if(h.kind==='file'){await writeFile(nd,n,await h.getFile());}}
-  await rootH.removeEntry(oldName,{recursive:true});
+// نقل ملفات جواز واحد من مجلده/اسمه القديم إلى الجديد (يُستخدم عند تصحيح الرقم يدوياً)
+async function moveRecordFile(oldFolder,oldImg,oldJson,newFolder,r){
+  try{
+    const oldDir=await rootH.getDirectoryHandle(oldFolder);
+    const file=await(await oldDir.getFileHandle(oldImg)).getFile();
+    const newDir=await rootH.getDirectoryHandle(newFolder,{create:true});
+    await writeFile(newDir,r.img,file);
+    await writeFile(newDir,r.json,jsonOf(r));
+    await oldDir.removeEntry(oldImg).catch(()=>{});
+    await oldDir.removeEntry(oldJson).catch(()=>{});
+    if(oldFolder!==newFolder){
+      let empty=true;
+      for await(const _ of oldDir.entries()){empty=false;break;}
+      if(empty)await rootH.removeEntry(oldFolder,{recursive:true}).catch(()=>{});
+    }
+  }catch(e){console.error(e);}
 }
 async function flushUnsaved(){
   if(!hasFS||!rootH||!(await ensureRoot(false)))return;
@@ -427,7 +443,7 @@ async function flushUnsaved(){
   if(!list.length)return;
   let n=0;
   for(const r of list){
-    try{await lock(async()=>{r.folder=folderFor(r);await saveToDisk(r);await DB.put('records',r);});n++;}
+    try{await lock(async()=>{assignSlot(r);await saveToDisk(r);await DB.put('records',r);});n++;}
     catch(e){console.error(e);break;}
   }
   if(n)toast(`تم حفظ ${n} جواز في المجلد`);
@@ -447,14 +463,14 @@ async function processFile(file){
     createdAt:Date.now(),thumb,blob,unsaved:diskMode,exported:false,manual:false,savedNumber:ocr.number};
   r.id=await DB.add('records',r);
   await lock(async()=>{
-    r.folder=folderFor(r);
+    assignSlot(r);
     if(diskMode&&rootH&&await ensureRoot(false)){
       try{await saveToDisk(r);}catch(e){console.error(e);}
     }
     await DB.put('records',r);
   });
   records.unshift(r);
-  if(r.dup)toast('تنبيه: هذا الرقم موجود مسبقاً — حُفظ كنسخة مكررة');
+  if(r.dup)toast(`تنبيه: هذا الرقم موجود مسبقاً — حُفظت الصورة في نفس المجلد باسم ${r.img}`);
   else if(r.number)toast(`✓ ${r.number} — تم الحفظ`,1800);
   else if(ocr.engine!==false)toast('⚠ لم يُقرأ الرقم — انتقل إلى «تحتاج مراجعة»',2800);
   setCurrent(r,touch&&!r.number&&queue.length===0);refreshAll();
@@ -494,20 +510,29 @@ async function commit(r){
   if(!r)return;clearTimeout(saveT);
   try{
     await lock(async()=>{
-      const old=r.folder;
       r.status=r.number?'done':'review';
       r.manual=r.number!==r.ocrNumber;
       if(r.savedNumber!==r.number){r.exported=false;r.savedNumber=r.number;}
       r.verified=!!r.verified&&!r.manual;
-      r.folder=folderFor(r);
-      if(hasFS&&!r.blob&&rootH&&await ensureRoot(false)){
-        await renameOnDisk(old,r.folder);
+      const numberChanged=r.assignedNumber!==r.number;
+      if(numberChanged){
+        const oldFolder=r.folder,oldImg=r.img,oldJson=r.json;
+        const newFolder=r.number?safe(r.number):('مراجعة_'+pad(r.id));
+        const before=r.number?records.filter(x=>x!==r&&x.number===r.number).length:0;
+        r.dup=r.number?before>0:false;
+        r.img=before===0?'passport.jpg':`passport_${before+1}.jpg`;
+        r.json=before===0?'data.json':`data_${before+1}.json`;
+        if(hasFS&&!r.blob&&rootH&&await ensureRoot(false)){
+          await moveRecordFile(oldFolder,oldImg,oldJson,newFolder,r);
+        }
+        r.folder=newFolder;r.assignedNumber=r.number;
+      }else if(hasFS&&!r.blob&&rootH&&await ensureRoot(false)){
         const d=await rootH.getDirectoryHandle(r.folder,{create:true});
-        await writeFile(d,'data.json',jsonOf(r));
+        await writeFile(d,r.json,jsonOf(r));
       }
       await DB.put('records',r);
     });
-    if(r.dup)toast('تنبيه: الرقم موجود مسبقاً في جواز آخر');
+    if(r.dup)toast('تنبيه: الرقم موجود مسبقاً — حُفظت في نفس المجلد');
     if(cur===r)setState(r.blob&&hasFS?'⚠ محفوظ داخل التطبيق — بانتظار المجلد':'✓ محفوظ تلقائياً',r.blob&&hasFS?'wr':'ok');
   }catch(e){console.error(e);if(cur===r)setState('⚠ تعذر الحفظ',"wr");toast('تعذر الحفظ في المجلد — تأكد من تفعيل مجلد الحفظ');}
   refreshAll();
