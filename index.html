@@ -584,8 +584,8 @@ function renderScan(){
   if(!hasFS){row.hidden=true;return;}
   row.hidden=false;
   if(!scanH){row.innerHTML=`<div><span class="dot"></span>السكنر غير مربوط<small>اختر مجلد حفظ صور السكنر ليُقرأ تلقائياً</small></div><button class="soft" id="pickScan">ربط السكنر</button>`;return;}
-  if(!watching){row.innerHTML=`<div><span class="dot wait"></span>السكنر: ${scanH.name}<small>المراقبة متوقفة</small></div><button class="soft warn" id="startScan">تشغيل</button>`;return;}
-  row.innerHTML=`<div><span class="dot on"></span>السكنر متصل — يراقب: ${scanH.name}<small>أي مسح جديد يُقرأ ويُحفظ لوحده</small></div><button class="soft" id="stopScan">إيقاف</button>`;
+  if(!watching){row.innerHTML=`<div><span class="dot wait"></span>السكنر: ${scanH.name}<small>المراقبة متوقفة</small></div><div style="display:flex;gap:6px"><button class="soft warn" id="startScan">تشغيل</button><button class="soft" id="pickScan">تغيير المجلد</button></div>`;return;}
+  row.innerHTML=`<div><span class="dot on"></span>السكنر متصل — يراقب: ${scanH.name}<small>أي مسح جديد يُقرأ ويُحفظ لوحده</small></div><div style="display:flex;gap:6px"><button class="soft" id="stopScan">إيقاف</button><button class="soft" id="pickScan">تغيير المجلد</button></div>`;
 }
 function refreshAll(){renderStats();renderList();renderChips();renderSave();renderScan();renderFoot();}
 
